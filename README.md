@@ -7,19 +7,27 @@ A production-style SaaS platform for document processing and AI-powered document
 ```
 docly/
 ├── apps/
-│   ├── web/       # Next.js frontend
-│   ├── api/       # Fastify REST API
-│   └── worker/    # Background job worker
+│   ├── web/       # Next.js frontend (App Router)
+│   ├── api/       # Fastify REST API (controllers/services/repositories)
+│   └── worker/    # Background job worker (BullMQ)
 ├── packages/
 │   ├── database/  # Prisma ORM and schema
-│   ├── config/    # Configuration management
-│   ├── types/     # Shared TypeScript types
-│   └── logger/    # Logging utilities
+│   ├── config/    # Zod-validated environment configuration
+│   ├── types/     # Shared TypeScript types + API response conventions
+│   ├── logger/    # Structured logging (pino)
+│   ├── redis/     # Redis client abstraction
+│   └── ui/        # Shared React UI components (Tailwind)
 ├── infra/
 │   ├── docker/    # Dockerfiles
 │   └── nginx/     # Nginx reverse proxy config
+├── docs/
+│   ├── ARCHITECTURE.md   # API conventions, versioning, logging, validation
+│   └── DEVELOPMENT.md    # Local setup, common tasks, troubleshooting
 └── docker-compose.yml  # Local development setup
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for API/error/logging/validation conventions
+and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for a detailed local setup guide.
 
 ## Tech Stack
 

@@ -42,19 +42,28 @@ export interface DocumentChunk {
   createdAt: Date;
 }
 
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+// API response envelope conventions.
+// Every API response is one of the two shapes below, discriminated on `success`.
+export interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
+  meta?: Record<string, unknown>;
   timestamp: string;
+}
+
+export interface ApiErrorBody {
+  code: string;
+  message: string;
+  details?: unknown;
 }
 
 export interface ApiErrorResponse {
   success: false;
-  error: string;
+  error: ApiErrorBody;
   timestamp: string;
 }
+
+export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 // Job types
 export interface ProcessingJob {

@@ -20,7 +20,9 @@
       "@docly/config": ["packages/config/src/index.ts"],
       "@docly/types": ["packages/types/src/index.ts"],
       "@docly/logger": ["packages/logger/src/index.ts"],
-      "@docly/database": ["packages/database/src/index.ts"]
+      "@docly/database": ["packages/database/src/index.ts"],
+      "@docly/redis": ["packages/redis/src/index.ts"],
+      "@docly/ui": ["packages/ui/src/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

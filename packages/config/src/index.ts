@@ -1,75 +1,55 @@
-import { createClient } from 'redis';
+import { z } from 'zod';
 
-// Load environment variables
-const env = process.env;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Database configuration
-export const DATABASE_URL = env.DATABASE_URL || 'postgresql://docly:docly_password@localhost:5432/docly_db?schema=public';
+// Environment configuration strategy: every variable is declared here with a type,
+// a safe development default (where one makes sense), and stricter rules for
+// production (e.g. JWT_SECRET can't fall back to a placeholder). Parsing happens
+// once at import time so a misconfigured deployment fails fast on startup with a
+// readable error instead of surfacing as a confusing runtime failure later.
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
-// Redis configuration
-const REDIS_URL = env.REDIS_URL || 'redis://localhost:6379';
-export const REDIS_HOST = env.REDIS_HOST || 'localhost';
-export const REDIS_PORT = parseInt(env.REDIS_PORT || '6379');
+  DATABASE_URL: z
+    .string()
+    .default('postgresql://docly:docly_password@localhost:5432/docly_db?schema=public'),
 
-// Create and export Redis client
-export const redis = createClient({
-  url: REDIS_URL,
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+
+  API_HOST: z.string().default('0.0.0.0'),
+  API_PORT: z.coerce.number().int().positive().default(3001),
+  CORS_ORIGIN: z.string().default('*'),
+
+  JWT_SECRET: isProduction
+    ? z.string().min(32, 'JWT_SECRET must be at least 32 characters in production')
+    : z.string().default('dev_jwt_secret_change_in_production_min_32_chars'),
+  JWT_EXPIRY: z.string().default('15m'),
+  JWT_REFRESH_EXPIRY: z.string().default('7d'),
+
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+
+  AWS_REGION: z.string().default('us-east-1'),
+  AWS_S3_BUCKET: z.string().default('docly-documents'),
+  AWS_ACCESS_KEY_ID: z.string().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().default(''),
+
+  OPENAI_API_KEY: z.string().default(''),
 });
 
-// Handle connection errors
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+export type Config = z.infer<typeof envSchema>;
 
-// Connect Redis
-redis.connect().catch((err) => {
-  console.error('Failed to connect to Redis:', err);
-  process.exit(1);
-});
+function loadConfig(): Config {
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
+      .join('\n');
+    throw new Error(`Invalid environment configuration:\n${issues}`);
+  }
+  return result.data;
+}
 
-// API configuration
-export const API_HOST = env.API_HOST || '0.0.0.0';
-export const API_PORT = parseInt(env.API_PORT || '3001');
-
-// Node environment
-export const NODE_ENV = env.NODE_ENV || 'development';
-export const LOG_LEVEL = env.LOG_LEVEL || 'info';
-
-// JWT configuration
-export const JWT_SECRET = env.JWT_SECRET || 'your_jwt_secret_change_in_production';
-export const JWT_EXPIRY = env.JWT_EXPIRY || '15m';
-export const JWT_REFRESH_EXPIRY = env.JWT_REFRESH_EXPIRY || '7d';
-
-// Worker configuration
-export const WORKER_CONCURRENCY = parseInt(env.WORKER_CONCURRENCY || '5');
-
-// AWS configuration
-export const AWS_REGION = env.AWS_REGION || 'us-east-1';
-export const AWS_S3_BUCKET = env.AWS_S3_BUCKET || 'docly-documents';
-export const AWS_ACCESS_KEY_ID = env.AWS_ACCESS_KEY_ID || '';
-export const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY || '';
-
-// LLM configuration
-export const OPENAI_API_KEY = env.OPENAI_API_KEY || '';
-
-export const config = {
-  NODE_ENV,
-  LOG_LEVEL,
-  DATABASE_URL,
-  REDIS_URL,
-  REDIS_HOST,
-  REDIS_PORT,
-  API_HOST,
-  API_PORT,
-  JWT_SECRET,
-  JWT_EXPIRY,
-  JWT_REFRESH_EXPIRY,
-  WORKER_CONCURRENCY,
-  AWS_REGION,
-  AWS_S3_BUCKET,
-  AWS_ACCESS_KEY_ID,
-  AWS_SECRET_ACCESS_KEY,
-  OPENAI_API_KEY,
-};
+export const config = loadConfig();
 
 export default config;

@@ -3,31 +3,33 @@ FROM node:20-alpine AS base
 
 WORKDIR /app
 
-# Copy monorepo files
-COPY package.json pnpm-lock.yaml ./
-COPY apps/api ./apps/api
+# npm workspaces needs every workspace's package.json present to resolve the
+# lockfile correctly, so copy the whole monorepo rather than just this app.
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
 COPY packages ./packages
-COPY tsconfig.base.json ./
 
-# Install dependencies
-RUN npm install -g pnpm
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
-# Build TypeScript
-RUN pnpm -F @docly/api build
+# Type-checks and produces a build - fails the image build on compile errors.
+RUN npm run build --workspace=@docly/api
 
 # Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-COPY package.json pnpm-lock.yaml ./
-COPY apps/api ./apps/api
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
 COPY packages ./packages
 
-RUN npm install -g pnpm
-RUN pnpm install --prod --frozen-lockfile
+RUN npm ci --omit=dev
 
 EXPOSE 3001
 
-CMD ["node", "apps/api/dist/index.js"]
+# Runs via tsx (a production dependency here) rather than the tsc-compiled
+# dist/, because workspace packages (@docly/database, @docly/config, ...) are
+# consumed as TypeScript source - the same way they run in development - not
+# as a separately built artifact.
+CMD ["npm", "run", "start", "--workspace=@docly/api"]

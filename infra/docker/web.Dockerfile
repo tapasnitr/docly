@@ -3,31 +3,31 @@ FROM node:20-alpine AS base
 
 WORKDIR /app
 
-# Copy monorepo files
-COPY package.json pnpm-lock.yaml ./
-COPY apps/web ./apps/web
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
 COPY packages ./packages
-COPY tsconfig.base.json ./
 
-# Install dependencies
-RUN npm install -g pnpm
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
-# Build Next.js
-RUN pnpm -F @docly/web build
+# Next's own bundler resolves and transpiles workspace packages (see
+# transpilePackages in next.config.ts), so no separate package build is
+# needed here - `next build` produces a fully self-contained .next/ output.
+RUN npm run build --workspace=@docly/web
 
 # Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-COPY package.json pnpm-lock.yaml ./
-COPY apps/web ./apps/web
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
 COPY packages ./packages
 
-RUN npm install -g pnpm
-RUN pnpm install --prod --frozen-lockfile
+RUN npm ci --omit=dev
+
+COPY --from=base /app/apps/web/.next ./apps/web/.next
 
 EXPOSE 3000
 
-CMD ["pnpm", "-F", "@docly/web", "start"]
+CMD ["npm", "run", "start", "--workspace=@docly/web"]
