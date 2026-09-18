@@ -36,17 +36,12 @@ docly/
 ### Prerequisites
 
 - Node.js >= 20
-- pnpm >= 8
+- npm >= 10
 - Docker & Docker Compose
-- macOS (or Linux with Docker)
 
 ### Setup
 
-1. Clone the repository and navigate to the project:
-
-```bash
-cd /Volumes/GAURANGA/coding/project/docly
-```
+1. Clone the repository and navigate into it.
 
 2. Copy environment configuration:
 
@@ -57,7 +52,7 @@ cp .env.example .env
 3. Install dependencies:
 
 ```bash
-pnpm install
+npm install
 ```
 
 4. Start Docker services:
@@ -69,13 +64,13 @@ docker-compose up -d
 5. Run database migrations:
 
 ```bash
-pnpm db:push
+npm run db:migrate
 ```
 
 6. Start development servers:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Access the application:
@@ -109,26 +104,26 @@ This allows us to scale each component independently while maintaining a simple,
 ### Start development mode
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 ### Build for production
 
 ```bash
-pnpm build
+npm run build
 ```
 
 ### Database operations
 
 ```bash
 # Run migrations
-pnpm db:migrate
+npm run db:migrate
 
 # Push schema changes
-pnpm db:push
+npm run db:push
 
 # Open Prisma Studio UI
-pnpm db:studio
+npm run db:studio
 ```
 
 ### Docker commands

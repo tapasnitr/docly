@@ -16,9 +16,10 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "turbo run test",
-    "db:migrate": "pnpm -F @docly/database migrate dev",
-    "db:push": "pnpm -F @docly/database db push",
-    "db:studio": "pnpm -F @docly/database studio",
+    "db:migrate": "npm run migrate --workspace=@docly/database",
+    "db:push": "npm run db:push --workspace=@docly/database",
+    "db:studio": "npm run db:studio --workspace=@docly/database",
+    "db:seed": "npm run db:seed --workspace=@docly/database",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
@@ -30,6 +31,6 @@
   },
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "npm": ">=10.0.0"
   }
 }
