@@ -1,0 +1,165 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Organization - top-level tenant
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  documents Document[]
+  
+  @@index([createdAt])
+}
+
+// User - belongs to organization
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  passwordHash   String
+  organizationId String
+  role           String   @default("member") // owner, admin, member, viewer
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents      Document[]
+  refreshTokens  RefreshToken[]
+  
+  @@index([organizationId])
+  @@index([email])
+}
+
+// Refresh tokens for JWT rotation
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// Document - belongs to organization
+model Document {
+  id              String   @id @default(cuid())
+  organizationId  String
+  uploadedById    String
+  title           String
+  filename        String
+  size            Int      // bytes
+  status          String   @default("pending") // pending, processing, ready, failed
+  s3Key           String   @unique
+  textContent     String?  @db.Text // extracted text from PDF
+  processingError String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy      User         @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  chunks          DocumentChunk[]
+  processingJobs  ProcessingJob[]
+  aiConversations AiConversation[]
+
+  @@index([organizationId])
+  @@index([uploadedById])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Document chunk for RAG
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  chunkIndex Int
+  text       String   @db.Text
+  embedding  String?  @db.Text // JSON serialized vector (will store in separate table later)
+  createdAt  DateTime @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([chunkIndex])
+}
+
+// Background processing jobs
+model ProcessingJob {
+  id        String   @id @default(cuid())
+  documentId String
+  jobType   String   // extract, embed, index
+  status    String   @default("pending") // pending, processing, completed, failed
+  retries   Int      @default(0)
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// AI conversations about documents
+model AiConversation {
+  id         String   @id @default(cuid())
+  documentId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  messages   AiMessage[]
+
+  @@index([documentId])
+  @@index([createdAt])
+}
+
+// AI messages in conversation
+model AiMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user or assistant
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+// Audit logs
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String   // created_document, deleted_document, etc.
+  resourceType   String   // document, user, etc.
+  resourceId     String
+  changes        String?  @db.Text // JSON
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
