@@ -44,7 +44,7 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://docly:docly_password@postgres:5432/docly_db?schema=public
+      DATABASE_URL: postgresql://postgres.axtwewjfughagzvhfdic:HareKrsna@108@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true
       REDIS_URL: redis://redis:6379
       API_PORT: 3001
       API_HOST: 0.0.0.0
@@ -87,7 +87,7 @@ services:
     container_name: docly_worker
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://docly:docly_password@postgres:5432/docly_db?schema=public
+      DATABASE_URL: postgresql://postgres.axtwewjfughagzvhfdic:HareKrsna@108@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true
       REDIS_URL: redis://redis:6379
       WORKER_CONCURRENCY: 5
       LOG_LEVEL: debug

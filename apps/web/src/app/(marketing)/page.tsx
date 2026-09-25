@@ -1,58 +1,52 @@
-import Link from 'next/link';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@docly/ui';
+import type { Metadata } from 'next';
+import { Navbar } from '../../components/marketing/Navbar';
+import { Hero } from '../../components/marketing/Hero';
+import { ProblemSection } from '../../components/marketing/ProblemSection';
+import { FeaturesGrid } from '../../components/marketing/FeaturesGrid';
+import { AISection } from '../../components/marketing/AISection';
+import { DocumentPipeline } from '../../components/marketing/DocumentPipeline';
+import { ProjectSection } from '../../components/marketing/ProjectSection';
+import { MultiTenancySection } from '../../components/marketing/MultiTenancySection';
+import { ArchitectureSection } from '../../components/marketing/ArchitectureSection';
+import { RealtimeSection } from '../../components/marketing/RealtimeSection';
+import { AnalyticsSection } from '../../components/marketing/AnalyticsSection';
+import { CommandPalette } from '../../components/marketing/CommandPalette';
+import { WorkflowSection } from '../../components/marketing/WorkflowSection';
+import { SecuritySection } from '../../components/marketing/SecuritySection';
+import { EngineeringSection } from '../../components/marketing/EngineeringSection';
+import { TechStackSection } from '../../components/marketing/TechStackSection';
+import { FinalCTA } from '../../components/marketing/FinalCTA';
+import { Footer } from '../../components/marketing/Footer';
 
-const pillars = [
-  {
-    title: 'Bring it together',
-    description: 'Upload PDFs, docs, and spreadsheets into one organized knowledge base.',
-  },
-  {
-    title: 'Make it useful',
-    description: 'Ask plain-language questions and get answers linked to the exact source.',
-  },
-  {
-    title: 'Share with confidence',
-    description: 'Give every teammate the right view with roles and workspace-level access.',
-  },
-];
+export const metadata: Metadata = {
+  title: "Turn Your Team's Knowledge Into an AI-Powered Workspace",
+  description:
+    "Bring your projects, tasks, documents, and organizational knowledge together in one secure, multi-tenant workspace with an AI knowledge assistant.",
+};
 
 export default function MarketingHomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-16 px-6 py-16">
-      <header className="flex items-center justify-between">
-        <span className="text-lg font-semibold tracking-tight">docly</span>
-        <nav className="flex items-center gap-3">
-          <Link href="/dashboard" className="text-sm font-medium text-slate-600 hover:text-slate-900">
-            Dashboard
-          </Link>
-          <Button size="sm">Get started</Button>
-        </nav>
-      </header>
-
-      <section className="flex flex-col gap-4">
-        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
-          Documents, finally organized
-        </p>
-        <h1 className="max-w-2xl text-5xl font-semibold leading-tight tracking-tight text-slate-900">
-          Your team&apos;s second brain.
-        </h1>
-        <p className="max-w-xl text-lg text-slate-600">
-          Docly turns scattered documents into a living, searchable knowledge base your whole
-          team can trust.
-        </p>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-3">
-        {pillars.map((pillar) => (
-          <Card key={pillar.title}>
-            <CardHeader>
-              <CardTitle>{pillar.title}</CardTitle>
-              <CardDescription>{pillar.description}</CardDescription>
-            </CardHeader>
-            <CardContent />
-          </Card>
-        ))}
-      </section>
-    </main>
+    <>
+      <Navbar />
+      <main className="overflow-x-hidden">
+        <Hero />
+        <ProblemSection />
+        <FeaturesGrid />
+        <AISection />
+        <DocumentPipeline />
+        <ProjectSection />
+        <MultiTenancySection />
+        <ArchitectureSection />
+        <RealtimeSection />
+        <AnalyticsSection />
+        <CommandPalette />
+        <WorkflowSection />
+        <SecuritySection />
+        <EngineeringSection />
+        <TechStackSection />
+        <FinalCTA />
+      </main>
+      <Footer />
+    </>
   );
 }

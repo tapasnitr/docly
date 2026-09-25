@@ -28,7 +28,7 @@ npm run dev          # all apps in dev mode, in parallel (turbo)
 npm run build        # production build of every app
 npm run lint          # eslint across every app
 npm run type-check    # tsc --noEmit across every workspace
-npm run test          # (no test suites yet - added in a later milestone)
+npm run test          # vitest across every workspace that has tests (currently api, web)
 
 npm run db:migrate    # prisma migrate dev
 npm run db:push       # prisma db push (no migration file)
@@ -38,12 +38,20 @@ npm run db:studio     # Prisma Studio UI
 Each of these can also be scoped to a single workspace, e.g.
 `npm run type-check --workspace=@docly/api`.
 
+`@docly/api`'s tests (`npm run test --workspace=@docly/api`) are integration
+tests that exercise the real auth, organizations/RBAC, and dashboard stack via
+Fastify's `app.inject()` - no mocking, but that means they need
+`docker-compose up -d postgres redis` running and a valid `.env`
+(`cp .env.example .env` is enough for local dev).
+
 ## Environment variables
 
-See `.env.example` for the full list. Everything is read and validated
-through `packages/config` (Zod schema) - if a required variable is missing
-or malformed, the API/worker will fail to start with a readable error
-instead of failing confusingly later.
+See `.env.example` for the full list. `packages/config` loads the repo-root
+`.env` (if present) before reading `process.env`, so `cp .env.example .env`
+is enough for `npm run dev`/`npm run test` run outside Docker - no extra
+tooling needed. Everything is then read and validated through a Zod schema -
+if a required variable is missing or malformed, the API/worker will fail to
+start with a readable error instead of failing confusingly later.
 
 | Variable | Used by | Notes |
 |---|---|---|
@@ -53,7 +61,7 @@ instead of failing confusingly later.
 | `CORS_ORIGIN` | api | Comma-separated allowed origins, or `*` for local dev |
 | `NEXT_PUBLIC_API_URL` | web | Base URL the browser uses to call the API |
 | `WORKER_CONCURRENCY` | worker | BullMQ concurrent job count |
-| `JWT_SECRET` / `JWT_EXPIRY` / `JWT_REFRESH_EXPIRY` | api | Required (min 32 chars) in production; no auth routes use these yet |
+| `JWT_SECRET` / `JWT_EXPIRY` / `JWT_REFRESH_EXPIRY` | api | Required (min 32 chars) in production; used to sign/expire access + refresh tokens (`/api/v1/auth/*`) |
 | `LOG_LEVEL` | api, worker | pino log level |
 | `AWS_*`, `OPENAI_API_KEY` | (future) | Placeholders for document storage / AI features, not wired up yet |
 

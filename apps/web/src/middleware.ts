@@ -1,13 +1,23 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Authentication-aware routing scaffold. Matches routes that will require a
-// session once auth exists; currently a pass-through.
+// Fast-path redirect for the protected (app) area: if there's no access-token
+// cookie at all, there's no point rendering the route just to have the
+// server-side check in (app)/layout.tsx bounce it - redirect here instead.
 //
-// TODO(auth): read the session/JWT cookie here and redirect to /login when
-// missing, for any path under /dashboard (or wherever the protected area
-// ends up living). Intentionally not implemented yet - this milestone only
-// establishes the structure, per the current scope (no auth features yet).
-export function middleware(_request: NextRequest) {
+// This is a UX optimization, not the security boundary: a present-but-expired
+// or forged cookie still gets through this check. The real boundary is
+// (app)/layout.tsx (which calls the API's /auth/me and only trusts a real
+// 200 response) and the API's `authenticate` middleware on every protected
+// endpoint, which actually verifies the JWT signature.
+export function middleware(request: NextRequest) {
+  const hasAccessToken = request.cookies.has('docly_access_token');
+
+  if (!hasAccessToken) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 

@@ -19,6 +19,10 @@ export class ApiRequestError extends Error {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
+    // Sends/receives the httpOnly session cookies (docly_access_token,
+    // docly_refresh_token) even when the API is on a different port than the
+    // web app in local dev - they're still same-site, just not same-origin.
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...init?.headers,

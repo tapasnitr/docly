@@ -10,52 +10,156 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Organization - top-level tenant
+// Organization - top-level tenant. Membership (who belongs, with what role)
+// lives in OrganizationMember, not here - a user can belong to more than one.
 model Organization {
-  id        String   @id @default(cuid())
+  id        String             @id @default(cuid())
   name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  slug      String             @unique
+  logoUrl   String?
+  // Billing tier and lifecycle state. Deliberately not part of the general
+  // PATCH /organizations update schema (apps/api/src/controllers/organization.controller.ts)
+  // - plan changes belong to a billing flow and status changes to
+  // ops/admin action, neither of which exist yet, unlike name/logo/settings
+  // which are ordinary Owner/Admin-editable fields (see docs/ARCHITECTURE.md).
+  plan      OrganizationPlan   @default(FREE)
+  status    OrganizationStatus @default(ACTIVE)
+  // Owner/Admin-configurable preferences (default member role, member
+  // permissions, AI settings, notification settings) - see
+  // apps/api/src/lib/organization-settings.ts for the shape and defaults.
+  // Stored sparse; always read back through normalizeSettings() so a schema
+  // addition here doesn't require a data migration for existing rows.
+  settings  Json               @default("{}")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
-  users     User[]
+  members   OrganizationMember[]
   documents Document[]
-  
+  projects  Project[]
+
   @@index([createdAt])
 }
 
-// User - belongs to organization
-model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  name           String
-  passwordHash   String
-  organizationId String
-  role           String   @default("member") // owner, admin, member, viewer
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+enum OrganizationPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  documents      Document[]
-  refreshTokens  RefreshToken[]
-  
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// Join table for the User <-> Organization many-to-many: every
+// organization-owned resource must be reached through a membership row for
+// the requesting user (see apps/api/src/middleware/require-organization-role.ts),
+// never through a trusted claim on the user or a JWT.
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  createdAt      DateTime         @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
   @@index([organizationId])
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+// User - a person. Organization membership is via OrganizationMember, not a
+// field here, since one person can belong to (and hold different roles in)
+// more than one organization.
+model User {
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  name                String
+  passwordHash        String
+  avatarUrl           String?
+  emailVerified       Boolean    @default(false)
+  status              UserStatus @default(ACTIVE)
+  emailNotifications  Boolean    @default(true)
+  // Login lockout: incremented on each failed password attempt against this
+  // user, reset on a successful login. lockedUntil is set once the threshold
+  // is hit (see apps/api/src/services/auth.service.ts) so repeated guesses
+  // fail fast without a per-account row growing unbounded.
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  memberships         OrganizationMember[]
+  documents           Document[]
+  refreshTokens       RefreshToken[]
+  verificationTokens  VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  createdProjects     Project[]
+  projectMemberships  ProjectMember[]
+
   @@index([email])
 }
 
 // Refresh tokens for JWT rotation
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
+}
+
+// Email verification tokens, issued on registration (and re-issued on
+// request) and consumed once by GET/POST /auth/verify-email. Only the SHA-256
+// hash is persisted (see apps/api/src/lib/tokens.ts), the same pattern as
+// RefreshToken - the raw token only ever exists in the emailed link.
+model VerificationToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Password reset tokens, issued by POST /auth/forgot-password. Single-use
+// (consumedAt) and short-lived (expiresAt) by construction - a token that's
+// already been used or has expired is treated as not found.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Document - belongs to organization
@@ -65,7 +169,7 @@ model Document {
   uploadedById    String
   title           String
   filename        String
-  size            Int      // bytes
+  size            Int // bytes
   status          String   @default("pending") // pending, processing, ready, failed
   s3Key           String   @unique
   textContent     String?  @db.Text // extracted text from PDF
@@ -73,8 +177,8 @@ model Document {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  uploadedBy      User         @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy      User             @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   chunks          DocumentChunk[]
   processingJobs  ProcessingJob[]
   aiConversations AiConversation[]
@@ -83,6 +187,71 @@ model Document {
   @@index([uploadedById])
   @@index([status])
   @@index([createdAt])
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+// Ascending privilege, mirrors OrganizationRole/rbac.ts but scoped to a
+// project: VIEWER (read-only) < MEMBER (contributes) < LEAD (manages the
+// project and its members). There's no project-level OWNER - organization
+// OWNER/ADMIN always have implicit LEAD-equivalent access (see
+// apps/api/src/lib/project-rbac.ts), so a project can never end up
+// "ownerless".
+enum ProjectRole {
+  VIEWER
+  MEMBER
+  LEAD
+}
+
+// Project - belongs to an organization. Membership (who belongs, with what
+// role) lives in ProjectMember, not here, and is deliberately a *subset* of
+// organization membership: a project can scope visibility to e.g. 8 of an
+// organization's 50 members (see apps/api/src/middleware/require-project-role.ts).
+model Project {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?       @db.Text
+  status         ProjectStatus @default(PLANNING)
+  startDate      DateTime?
+  dueDate        DateTime?
+  createdById    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  members      ProjectMember[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([createdAt])
+}
+
+// Join table for the User <-> Project many-to-many. Every project-owned
+// resource must be reached through a membership row for the requesting user
+// (unless they're an organization OWNER/ADMIN, which bypasses this - see
+// require-project-role.ts), the same principle OrganizationMember enforces
+// for organization-owned resources.
+model ProjectMember {
+  id        String      @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(MEMBER)
+  createdAt DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
 }
 
 // Document chunk for RAG
@@ -94,7 +263,7 @@ model DocumentChunk {
   embedding  String?  @db.Text // JSON serialized vector (will store in separate table later)
   createdAt  DateTime @default(now())
 
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
   @@index([chunkIndex])
@@ -102,16 +271,16 @@ model DocumentChunk {
 
 // Background processing jobs
 model ProcessingJob {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   documentId String
-  jobType   String   // extract, embed, index
-  status    String   @default("pending") // pending, processing, completed, failed
-  retries   Int      @default(0)
-  error     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  jobType    String // extract, embed, index
+  status     String   @default("pending") // pending, processing, completed, failed
+  retries    Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
   @@index([status])
@@ -125,8 +294,8 @@ model AiConversation {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  messages   AiMessage[]
+  document Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
 
   @@index([documentId])
   @@index([createdAt])
@@ -136,11 +305,11 @@ model AiConversation {
 model AiMessage {
   id             String   @id @default(cuid())
   conversationId String
-  role           String   // user or assistant
+  role           String // user or assistant
   content        String   @db.Text
   createdAt      DateTime @default(now())
 
-  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
 }
@@ -150,8 +319,8 @@ model AuditLog {
   id             String   @id @default(cuid())
   organizationId String
   userId         String?
-  action         String   // created_document, deleted_document, etc.
-  resourceType   String   // document, user, etc.
+  action         String // created_document, deleted_document, etc.
+  resourceType   String // document, user, etc.
   resourceId     String
   changes        String?  @db.Text // JSON
   ipAddress      String?

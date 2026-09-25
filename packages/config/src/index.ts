@@ -1,4 +1,16 @@
+import { resolve } from 'node:path';
+import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
+
+// Loads the repo-root .env into process.env for local/bare-metal dev and test
+// runs (`npm run dev`, `vitest run`), where nothing else populates it. npm/turbo
+// run workspace scripts with cwd set to that workspace's own directory, and
+// every workspace lives exactly two levels under the repo root (apps/* or
+// packages/*), so this relative path is stable regardless of which workspace
+// triggered it. Never overrides variables already set in the environment
+// (e.g. by docker-compose), and is a silent no-op if the file doesn't exist
+// (production deployments don't ship one).
+loadDotenv({ path: resolve(process.cwd(), '../../.env') });
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -26,6 +38,24 @@ const envSchema = z.object({
     : z.string().default('dev_jwt_secret_change_in_production_min_32_chars'),
   JWT_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
+
+  // Base URL of the web app, used to build links embedded in emails
+  // (verify-email, reset-password) - never derived from request headers,
+  // which a client can spoof.
+  WEB_APP_URL: z.string().default('http://localhost:3000'),
+
+  // Email (Resend). RESEND_API_KEY is intentionally optional even in
+  // production-shaped config: when unset, lib/email.ts logs the email instead
+  // of sending it, so local/dev environments work without a real account.
+  RESEND_API_KEY: z.string().default(''),
+  EMAIL_FROM: z.string().default('Docly <onboarding@resend.dev>'),
+  EMAIL_VERIFICATION_EXPIRY: z.string().default('24h'),
+  PASSWORD_RESET_EXPIRY: z.string().default('1h'),
+
+  // Account lockout: consecutive failed login attempts before a temporary
+  // lock kicks in, and how long that lock lasts.
+  LOGIN_LOCKOUT_THRESHOLD: z.coerce.number().int().positive().default(5),
+  LOGIN_LOCKOUT_DURATION: z.string().default('15m'),
 
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
 
