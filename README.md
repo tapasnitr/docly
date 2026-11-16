@@ -125,6 +125,15 @@ that's still running in another terminal - stop that one first. See
 [docs/DEVELOPMENT.md#troubleshooting](docs/DEVELOPMENT.md#troubleshooting)
 for this and other common setup issues.
 
+## Ask your documents (RAG)
+
+Open a project, upload a PDF/DOCX, wait for **Ready**, then click **Ask**.
+
+- Answers stream in over Server-Sent Events with `[n]` citation chips and an expandable list of the source passages.
+- Pipeline: extract -> chunk -> embed (worker) -> cosine search over the document's chunks -> grounded prompt (with a prompt-injection guard) -> streamed answer.
+- Works with no API keys: embeddings fall back to an offline feature-hash and answers to extractive passages. Set `OPENAI_API_KEY` for real embeddings and `ANTHROPIC_API_KEY` for generated answers (see `.env.example`).
+- Code: `packages/rag` (provider-agnostic core, unit-tested), `apps/api/src/services/ai.service.ts`, `apps/web/src/components/documents/AskPanel.tsx`.
+
 ## Services
 
 | Service | Port | Purpose |
