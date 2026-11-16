@@ -2,17 +2,19 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Boxes, Lock, Radio, Server, Sparkles } from 'lucide-react';
+import { CheckCircle2, CreditCard, Sparkles, Timer } from 'lucide-react';
 import { Button } from '@docly/ui';
 import { HeroDashboardMockup } from './HeroDashboardMockup';
 import { GradientBlob } from './ui/GradientBlob';
+import { DemoLoginButton } from '../auth/DemoLoginButton';
 
+// User-facing benefits, not backend jargon - a visitor deciding whether to
+// sign up doesn't care that it's "multi-tenant," they care that it's free
+// and fast to try.
 const TRUST_INDICATORS = [
-  { icon: Boxes, label: 'Multi-Tenant', color: 'text-indigo-600 bg-indigo-50' },
-  { icon: Sparkles, label: 'AI + RAG', color: 'text-fuchsia-600 bg-fuchsia-50' },
-  { icon: Radio, label: 'Real-Time', color: 'text-emerald-600 bg-emerald-50' },
-  { icon: Lock, label: 'Role-Based Access', color: 'text-amber-600 bg-amber-50' },
-  { icon: Server, label: 'Production Architecture', color: 'text-sky-600 bg-sky-50' },
+  { icon: CheckCircle2, label: 'Free to get started', color: 'text-emerald-600 bg-emerald-50' },
+  { icon: CreditCard, label: 'No credit card required', color: 'text-indigo-600 bg-indigo-50' },
+  { icon: Timer, label: 'Set up in minutes', color: 'text-amber-600 bg-amber-50' },
 ];
 
 export function Hero() {
@@ -58,11 +60,7 @@ export function Hero() {
                 Create Your Workspace
               </Button>
             </Link>
-            <a href="#platform">
-              <Button size="lg" variant="outline">
-                Explore the Platform
-              </Button>
-            </a>
+            <DemoLoginButton label="View Demo - No Signup" size="lg" variant="outline" />
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2">

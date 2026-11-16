@@ -19,7 +19,9 @@ import {
 import { getErrorMessage } from '../../../../../../lib/errors';
 import { projectStatusBadgeVariant, PROJECT_STATUS_LABELS } from '../../../../../../lib/project-status-badge';
 import { projectRoleBadgeVariant } from '../../../../../../lib/project-role-badge';
-import { formatActivityAction } from '../../../../../../lib/format-activity';
+import { formatActivityAction, formatActivityActor } from '../../../../../../lib/format-activity';
+import { TasksTab } from '../../../../../../components/tasks/TasksTab';
+import { DocumentsTab } from '../../../../../../components/documents/DocumentsTab';
 
 const STATUS_OPTIONS: ProjectStatus[] = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED'];
 const ASSIGNABLE_ROLES: ProjectRole[] = ['MEMBER', 'VIEWER'];
@@ -114,6 +116,17 @@ export default function ProjectDetailsPage() {
     }
   }, [tab, loadActivity]);
 
+  // Re-reads the project (task count / progress) without flipping the page
+  // back to its loading state, so the board stays mounted while tasks change.
+  const refreshProjectStats = useCallback(async () => {
+    try {
+      const result = await getProject(organizationId, projectId);
+      setProject(result.project);
+    } catch {
+      // Keep showing the last known stats.
+    }
+  }, [organizationId, projectId]);
+
   const canManage = project?.role === 'LEAD';
   const availableOrgMembers = orgMembers.filter(
     (orgMember) => !members.some((member) => member.userId === orgMember.userId)
@@ -199,28 +212,48 @@ export default function ProjectDetailsPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="mx-auto max-w-4xl px-6 py-16 text-sm text-slate-500">Loading...</p>;
+    return <p className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-slate-500">Loading...</p>;
   }
 
   if (loadState === 'error' || !project) {
-    return <p className="mx-auto max-w-4xl px-6 py-16 text-sm text-red-600">Couldn&apos;t load this project.</p>;
+    return <p className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-red-600">Couldn&apos;t load this project.</p>;
   }
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-16">
+    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{project.name}</h1>
         <Badge variant={projectStatusBadgeVariant(project.status)}>{PROJECT_STATUS_LABELS[project.status]}</Badge>
         <Badge variant={projectRoleBadgeVariant(project.role)}>{project.role}</Badge>
       </div>
 
-      <div className="flex gap-1 border-b border-slate-200">
+      {project.taskCount > 0 ? (
+        <div className="flex items-center gap-3">
+          <div
+            role="progressbar"
+            aria-label="Project progress"
+            aria-valuenow={project.progress ?? 0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-200"
+          >
+            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${project.progress ?? 0}%` }} />
+          </div>
+          <span className="text-sm text-slate-600">
+            {project.progress ?? 0}% done · {project.taskCount} task{project.taskCount === 1 ? '' : 's'}
+          </span>
+        </div>
+      ) : null}
+
+      <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">
         {TABS.map((t) => (
           <button
             key={t}
             type="button"
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm font-medium ${
+            className={`shrink-0 whitespace-nowrap px-3 py-2 text-sm font-medium ${
               tab === t ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -342,12 +375,24 @@ export default function ProjectDetailsPage() {
         </Card>
       ) : null}
 
-      {tab === 'Tasks' || tab === 'Documents' ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">Coming soon.</p>
-          </CardContent>
-        </Card>
+      {tab === 'Tasks' && user ? (
+        <TasksTab
+          organizationId={organizationId}
+          projectId={projectId}
+          projectRole={project.role}
+          currentUserId={user.id}
+          members={members}
+          onTasksChanged={refreshProjectStats}
+        />
+      ) : null}
+
+      {tab === 'Documents' && user ? (
+        <DocumentsTab
+          organizationId={organizationId}
+          projectId={projectId}
+          projectRole={project.role}
+          currentUserId={user.id}
+        />
       ) : null}
 
       {tab === 'Members' ? (
@@ -473,7 +518,7 @@ export default function ProjectDetailsPage() {
               {activity.map((entry) => (
                 <li key={entry.id} className="py-3 first:pt-0 last:pb-0">
                   <p className="text-sm text-slate-700">
-                    <span className="font-medium text-slate-900">{entry.actor?.name ?? 'Someone'}</span>{' '}
+                    <span className="font-medium text-slate-900">{formatActivityActor(entry)}</span>{' '}
                     {formatActivityAction(entry)}
                   </p>
                   <p className="text-xs text-slate-400">{new Date(entry.createdAt).toLocaleString()}</p>

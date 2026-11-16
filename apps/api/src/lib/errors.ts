@@ -48,6 +48,11 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class PayloadTooLargeError extends AppError {
+  readonly statusCode = 413;
+  readonly code = 'PAYLOAD_TOO_LARGE';
+}
+
 export class ConflictError extends AppError {
   readonly statusCode = 409;
   readonly code = 'CONFLICT';

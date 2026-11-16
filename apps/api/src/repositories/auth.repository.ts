@@ -40,6 +40,19 @@ export const authRepository = {
         },
       });
 
+      // Same entry organizationService.createOrganization records, written in
+      // this transaction so a new user's activity feed starts with their
+      // personal workspace being created.
+      await tx.auditLog.create({
+        data: {
+          organizationId: organization.id,
+          userId: user.id,
+          action: 'organization.created',
+          resourceType: 'organization',
+          resourceId: organization.id,
+        },
+      });
+
       return user;
     });
   },

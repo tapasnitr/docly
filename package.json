@@ -10,7 +10,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
+    "dev:lite": "turbo run dev --filter=@docly/web --filter=@docly/api",
     "build": "turbo run build",
     "start": "turbo run start",
     "lint": "turbo run lint",

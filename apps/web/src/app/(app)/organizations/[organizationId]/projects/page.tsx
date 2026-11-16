@@ -11,6 +11,7 @@ import { createProject } from '../../../../../lib/projects-api';
 import { useProjects, DEFAULT_PROJECT_FILTERS, type ProjectFilters } from '../../../../../lib/use-projects';
 import { projectStatusBadgeVariant, PROJECT_STATUS_LABELS } from '../../../../../lib/project-status-badge';
 import { getErrorMessage } from '../../../../../lib/errors';
+import { useWorkspace } from '../../../../../lib/workspace-context';
 
 const STATUS_OPTIONS: ProjectStatus[] = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED'];
 const SORT_OPTIONS: { value: ProjectFilters['sort']; label: string }[] = [
@@ -28,6 +29,7 @@ export default function ProjectsPage() {
 
   const [filters, setFilters] = useState<ProjectFilters>(DEFAULT_PROJECT_FILTERS);
   const { projects, pagination, status, refresh } = useProjects(organizationId, filters);
+  const { refreshProjects: refreshWorkspaceProjects } = useWorkspace();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -84,7 +86,7 @@ export default function ProjectsPage() {
       setStartDate('');
       setDueDate('');
       setSelectedMemberIds([]);
-      await refresh();
+      await Promise.all([refresh(), refreshWorkspaceProjects()]);
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {
@@ -93,7 +95,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Projects</h1>
         <p className="mt-1 text-sm text-slate-600">Projects in this organization.</p>

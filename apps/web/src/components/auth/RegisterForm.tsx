@@ -44,7 +44,6 @@ export function RegisterForm() {
     try {
       await register({ name, email, password, confirmPassword });
       router.push('/dashboard');
-      router.refresh();
     } catch (error) {
       // Duplicate-email registration surfaces the API's error message
       // directly (e.g. "An account with this email already exists").

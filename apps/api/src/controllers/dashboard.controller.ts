@@ -23,15 +23,19 @@ function organizationId(request: FastifyRequest): string {
 export const dashboardController = {
   async getDashboard(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const orgId = organizationId(request);
+    const { role } = currentMembership(request);
     const [organization, dashboard] = await Promise.all([
       organizationService.getOrganization(orgId),
-      dashboardService.getDashboard(orgId),
+      dashboardService.getDashboard(orgId, { userId: request.user.userId, role }),
     ]);
 
     sendSuccess(reply, {
-      organization: { ...organization, role: currentMembership(request).role },
+      organization: { ...organization, role },
       documentCounts: dashboard.documentCounts,
       recentDocuments: dashboard.recentDocuments,
+      projectCounts: dashboard.projectCounts,
+      recentProjects: dashboard.recentProjects,
+      memberCount: dashboard.memberCount,
     });
   },
 

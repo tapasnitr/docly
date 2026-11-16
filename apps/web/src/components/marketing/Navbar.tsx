@@ -6,12 +6,13 @@ import { Menu, X } from 'lucide-react';
 import { Button, cn } from '@docly/ui';
 import { Logo } from './Logo';
 import { MarketingNav } from '../auth/MarketingNav';
+import { DemoLoginButton } from '../auth/DemoLoginButton';
 
 const LINKS = [
-  { href: '#platform', label: 'Platform' },
   { href: '#features', label: 'Features' },
-  { href: '#ai-workspace', label: 'AI Workspace' },
-  { href: '#architecture', label: 'Architecture' },
+  { href: '#ai-workspace', label: 'AI Assistant' },
+  { href: '#platform', label: 'Projects' },
+  { href: '#how-it-works', label: 'How it works' },
   { href: '#security', label: 'Security' },
 ];
 
@@ -52,7 +53,8 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-4 md:flex">
+          <DemoLoginButton label="View Demo" variant="ghost" size="sm" />
           <MarketingNav />
         </div>
 
@@ -93,6 +95,7 @@ export function Navbar() {
                 Create Your Workspace
               </Button>
             </Link>
+            <DemoLoginButton label="View Demo" variant="outline" size="sm" className="w-full" />
           </div>
         </div>
       ) : null}

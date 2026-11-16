@@ -3,6 +3,7 @@ import type { Organization, OrganizationSettings } from '@docly/types';
 import { organizationRepository } from '../repositories/organization.repository.js';
 import { organizationMemberRepository } from '../repositories/organization-member.repository.js';
 import { auditLogRepository } from '../repositories/audit-log.repository.js';
+import { documentService } from './document.service.js';
 import { generateOrganizationSlug } from '../lib/slug.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
 import { normalizeSettings, applySettingsPatch, type OrganizationSettingsPatch } from '../lib/organization-settings.js';
@@ -118,6 +119,10 @@ export const organizationService = {
       resourceType: 'organization',
       resourceId: organizationId,
     });
+    // The DB rows cascade away with the organization, but stored files don't:
+    // collect their keys first, remove the files once the delete succeeded.
+    const storageKeys = await documentService.storageKeysForOrganization(organizationId);
     await organizationRepository.delete(organizationId);
+    await documentService.removeStoredFiles(storageKeys);
   },
 };

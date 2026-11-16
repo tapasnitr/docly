@@ -4,17 +4,10 @@ import { Hero } from '../../components/marketing/Hero';
 import { ProblemSection } from '../../components/marketing/ProblemSection';
 import { FeaturesGrid } from '../../components/marketing/FeaturesGrid';
 import { AISection } from '../../components/marketing/AISection';
-import { DocumentPipeline } from '../../components/marketing/DocumentPipeline';
 import { ProjectSection } from '../../components/marketing/ProjectSection';
-import { MultiTenancySection } from '../../components/marketing/MultiTenancySection';
-import { ArchitectureSection } from '../../components/marketing/ArchitectureSection';
-import { RealtimeSection } from '../../components/marketing/RealtimeSection';
-import { AnalyticsSection } from '../../components/marketing/AnalyticsSection';
-import { CommandPalette } from '../../components/marketing/CommandPalette';
 import { WorkflowSection } from '../../components/marketing/WorkflowSection';
-import { SecuritySection } from '../../components/marketing/SecuritySection';
-import { EngineeringSection } from '../../components/marketing/EngineeringSection';
-import { TechStackSection } from '../../components/marketing/TechStackSection';
+import { TrustSection } from '../../components/marketing/TrustSection';
+import { FAQSection } from '../../components/marketing/FAQSection';
 import { FinalCTA } from '../../components/marketing/FinalCTA';
 import { Footer } from '../../components/marketing/Footer';
 
@@ -33,17 +26,10 @@ export default function MarketingHomePage() {
         <ProblemSection />
         <FeaturesGrid />
         <AISection />
-        <DocumentPipeline />
         <ProjectSection />
-        <MultiTenancySection />
-        <ArchitectureSection />
-        <RealtimeSection />
-        <AnalyticsSection />
-        <CommandPalette />
         <WorkflowSection />
-        <SecuritySection />
-        <EngineeringSection />
-        <TechStackSection />
+        <TrustSection />
+        <FAQSection />
         <FinalCTA />
       </main>
       <Footer />

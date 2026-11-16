@@ -42,7 +42,7 @@ export const activityService = {
   async listProjectActivity(organizationId: string, projectId: string, limit: number): Promise<ActivityEntry[]> {
     const logs = await auditLogRepository.listRecentForResource(
       organizationId,
-      ['project', 'project_member'],
+      ['project', 'project_member', 'task', 'document'],
       projectId,
       limit
     );

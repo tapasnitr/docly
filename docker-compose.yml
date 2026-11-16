@@ -50,6 +50,7 @@ services:
       API_HOST: 0.0.0.0
       CORS_ORIGIN: "*"
       LOG_LEVEL: debug
+      STORAGE_DIR: /data/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +59,9 @@ services:
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./packages:/app/packages
+      # Uploaded documents: the API writes them, the worker reads them, so both
+      # must see the same files.
+      - document_storage:/data/storage
     networks:
       - docly_network
 
@@ -91,6 +95,7 @@ services:
       REDIS_URL: redis://redis:6379
       WORKER_CONCURRENCY: 5
       LOG_LEVEL: debug
+      STORAGE_DIR: /data/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,6 +104,7 @@ services:
     volumes:
       - ./apps/worker/src:/app/apps/worker/src
       - ./packages:/app/packages
+      - document_storage:/data/storage
     networks:
       - docly_network
 
@@ -120,6 +126,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  document_storage:
     driver: local
 
 networks:

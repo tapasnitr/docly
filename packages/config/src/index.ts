@@ -44,11 +44,13 @@ const envSchema = z.object({
   // which a client can spoof.
   WEB_APP_URL: z.string().default('http://localhost:3000'),
 
-  // Email (Resend). RESEND_API_KEY is intentionally optional even in
-  // production-shaped config: when unset, lib/email.ts logs the email instead
-  // of sending it, so local/dev environments work without a real account.
-  RESEND_API_KEY: z.string().default(''),
-  EMAIL_FROM: z.string().default('Docly <onboarding@resend.dev>'),
+  // Email via SMTP (e.g. Gmail: smtp.gmail.com:465 with an App Password). When
+  // SMTP_HOST is unset, lib/email.ts logs emails instead of sending them.
+  SMTP_HOST: z.string().default(''),
+  SMTP_PORT: z.coerce.number().default(465),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  EMAIL_FROM: z.string().default('Docly <you@example.com>'),
   EMAIL_VERIFICATION_EXPIRY: z.string().default('24h'),
   PASSWORD_RESET_EXPIRY: z.string().default('1h'),
 
@@ -58,6 +60,13 @@ const envSchema = z.object({
   LOGIN_LOCKOUT_DURATION: z.string().default('15m'),
 
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+
+  // Document storage. Files go through the StorageProvider abstraction
+  // (apps/api/src/storage); the local-disk provider writes under STORAGE_DIR
+  // (default: <repo root>/storage, resolved like the .env path above - in
+  // Docker, point it at a mounted volume). MAX_UPLOAD_MB caps a single upload.
+  STORAGE_DIR: z.string().default(resolve(process.cwd(), '../../storage')),
+  MAX_UPLOAD_MB: z.coerce.number().positive().default(10),
 
   AWS_REGION: z.string().default('us-east-1'),
   AWS_S3_BUCKET: z.string().default('docly-documents'),

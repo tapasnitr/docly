@@ -1,10 +1,17 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { config } from '@docly/config';
 
-// Thin wrapper around Resend. When RESEND_API_KEY is unset (local/dev), sends
-// are logged instead of attempted, so the auth flows work end-to-end without
-// a real account - this is the only place that decides "send vs. log".
-const resendClient = config.RESEND_API_KEY ? new Resend(config.RESEND_API_KEY) : null;
+// Thin wrapper around SMTP (nodemailer). When SMTP_HOST is unset (local/dev),
+// sends are logged instead of attempted, so the auth flows work end-to-end
+// without a mail account - this is the only place that decides "send vs. log".
+const smtpTransport = config.SMTP_HOST
+  ? nodemailer.createTransport({
+      host: config.SMTP_HOST,
+      port: config.SMTP_PORT,
+      secure: config.SMTP_PORT === 465,
+      auth: { user: config.SMTP_USER, pass: config.SMTP_PASS },
+    })
+  : null;
 
 interface SendEmailInput {
   to: string;
@@ -13,20 +20,18 @@ interface SendEmailInput {
 }
 
 async function sendEmail(input: SendEmailInput): Promise<void> {
-  if (!resendClient) {
+  if (!smtpTransport) {
     // eslint-disable-next-line no-console
     console.warn(
-      `[email:dev] RESEND_API_KEY not set - logging instead of sending.\nTo: ${input.to}\nSubject: ${input.subject}\n${input.html}`
+      `[email:dev] SMTP_HOST not set - logging instead of sending.
+To: ${input.to}
+Subject: ${input.subject}
+${input.html}`
     );
     return;
   }
 
-  await resendClient.emails.send({
-    from: config.EMAIL_FROM,
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-  });
+  await smtpTransport.sendMail({ from: config.EMAIL_FROM, to: input.to, subject: input.subject, html: input.html });
 }
 
 export function buildVerificationUrl(token: string): string {

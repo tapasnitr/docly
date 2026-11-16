@@ -22,6 +22,9 @@
       "@docly/logger": ["packages/logger/src/index.ts"],
       "@docly/database": ["packages/database/src/index.ts"],
       "@docly/redis": ["packages/redis/src/index.ts"],
+      "@docly/storage": ["packages/storage/src/index.ts"],
+      "@docly/jobs": ["packages/jobs/src/index.ts"],
+      "@docly/rag": ["packages/rag/src/index.ts"],
       "@docly/ui": ["packages/ui/src/index.ts"]
     }
   },

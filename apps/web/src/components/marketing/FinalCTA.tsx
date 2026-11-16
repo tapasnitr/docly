@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@docly/ui';
 import { Reveal } from './ui/Reveal';
 import { GradientBlob } from './ui/GradientBlob';
+import { DemoLoginButton } from '../auth/DemoLoginButton';
 
 export function FinalCTA() {
   return (
@@ -26,11 +27,12 @@ export function FinalCTA() {
                 Create Your Workspace
               </Button>
             </Link>
-            <Link href="/dashboard">
-              <Button size="lg" variant="outline" className="border-slate-600 text-white hover:bg-slate-800">
-                Explore Demo
-              </Button>
-            </Link>
+            <DemoLoginButton
+              label="Explore Demo"
+              size="lg"
+              variant="outline"
+              className="border-slate-600 text-white hover:bg-slate-800"
+            />
           </div>
           <p className="relative text-xs text-slate-500">Built as a production-style multi-tenant SaaS platform.</p>
         </div>

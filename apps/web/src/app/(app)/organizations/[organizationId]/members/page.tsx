@@ -110,15 +110,15 @@ export default function OrganizationMembersPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="mx-auto max-w-3xl px-6 py-16 text-sm text-slate-500">Loading...</p>;
+    return <p className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-slate-500">Loading...</p>;
   }
 
   if (loadState === 'error' || !organization) {
-    return <p className="mx-auto max-w-3xl px-6 py-16 text-sm text-red-600">Couldn&apos;t load this organization.</p>;
+    return <p className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-red-600">Couldn&apos;t load this organization.</p>;
   }
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{organization.name} - Members</h1>
         <Badge variant={roleBadgeVariant(organization.role)}>{organization.role}</Badge>

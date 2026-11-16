@@ -129,19 +129,19 @@ export default function OrganizationSettingsPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="mx-auto max-w-2xl px-6 py-16 text-sm text-slate-500">Loading...</p>;
+    return <p className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-slate-500">Loading...</p>;
   }
 
   if (loadState === 'not-found') {
-    return <p className="mx-auto max-w-2xl px-6 py-16 text-sm text-slate-600">Organization not found.</p>;
+    return <p className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-slate-600">Organization not found.</p>;
   }
 
   if (loadState === 'error' || !organization) {
-    return <p className="mx-auto max-w-2xl px-6 py-16 text-sm text-red-600">Couldn&apos;t load this organization.</p>;
+    return <p className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 text-sm text-red-600">Couldn&apos;t load this organization.</p>;
   }
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{organization.name}</h1>
         <Badge variant={roleBadgeVariant(organization.role)}>{organization.role}</Badge>

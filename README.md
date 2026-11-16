@@ -44,8 +44,10 @@ and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for a detailed local setup guide.
 ### Prerequisites
 
 - Node.js >= 20
-- npm >= 10
-- Docker & Docker Compose
+- npm >= 10 (this repo uses npm workspaces, not pnpm/yarn)
+- Docker Desktop, running (on Windows, Docker Desktop requires a WSL2 distro -
+  if `docker-compose` hangs or fails with a `dockerDesktopLinuxEngine` error,
+  see [Troubleshooting](docs/DEVELOPMENT.md#troubleshooting))
 
 ### Setup
 
@@ -63,10 +65,10 @@ cp .env.example .env
 npm install
 ```
 
-4. Start Docker services:
+4. Start **just** the datastores in Docker (not the whole app):
 
 ```bash
-docker-compose up -d
+docker-compose up -d postgres redis
 ```
 
 5. Run database migrations:
@@ -75,16 +77,53 @@ docker-compose up -d
 npm run db:migrate
 ```
 
-6. Start development servers:
+6. (Optional) Seed a demo organization with sample projects, members, and
+   documents - useful for trying the app without registering:
+
+```bash
+npm run db:seed
+```
+
+7. Start the app (web, API, and worker, all in dev mode):
 
 ```bash
 npm run dev
 ```
 
+Leave that terminal running - it's a long-lived process, not something that exits.
+
 Access the application:
-- Frontend: http://localhost
-- API: http://localhost/api
-- API Swagger (later): http://localhost/api/docs
+- Frontend: http://localhost:3000
+- API: http://localhost:3001/api/v1/health/ready
+
+### Demo account
+
+After running `npm run db:seed`, a public, read-only account is available -
+click **View Demo** on the landing page/login page, or sign in manually with:
+
+```
+demo@docly.dev / DemoAccess123
+```
+
+This account is `VIEWER` everywhere (organization and every project), so it
+can browse the whole app but can't create, edit, or delete anything - safe to
+share the credentials publicly. Source of truth for the seed data is
+[packages/database/seed.ts](packages/database/seed.ts); the credentials
+themselves also live in
+[apps/web/src/lib/demo.ts](apps/web/src/lib/demo.ts), which the "View Demo"
+button uses - keep both in sync if you ever change them.
+
+> **Alternative**: to run everything (including the frontend/API/worker)
+> inside Docker instead of locally, use `docker-compose up -d` (no service
+> names) and access it through nginx at http://localhost. Don't run both
+> flows at once - they'd fight over the same ports. See
+> [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for details.
+
+**If `npm run dev` fails immediately or a page won't load:** the most common
+cause is a port already in use (3000 or 3001) from a previous `npm run dev`
+that's still running in another terminal - stop that one first. See
+[docs/DEVELOPMENT.md#troubleshooting](docs/DEVELOPMENT.md#troubleshooting)
+for this and other common setup issues.
 
 ## Services
 
@@ -137,7 +176,10 @@ npm run db:studio
 ### Docker commands
 
 ```bash
-# Start all services
+# Start just the datastores (the usual local-dev flow, paired with `npm run dev`)
+docker-compose up -d postgres redis
+
+# Or start everything, including the app itself, containerized
 docker-compose up -d
 
 # View logs
@@ -149,20 +191,23 @@ docker-compose down
 
 ## Milestones
 
-This project is built milestone by milestone:
+This project is built milestone by milestone. ✅ = implemented and wired up,
+🚧 = scaffolded (schema/plumbing exists) but not functionally complete, no
+mark = not started yet:
 
 0. ✅ **Project Foundation** - Repository structure, Docker, config
-1. **Database** - Prisma setup, migrations, indexes
-2. **Authentication** - Registration, login, JWT
-3. **Organizations + RBAC** - Multi-tenancy, roles
-4. **Document Management** - Upload, S3, metadata
-5. **Background Processing** - BullMQ, PDF extraction
-6. **RAG / AI** - Embeddings, vector search, LLM
-7. **WebSockets** - Real-time updates
-8. **Production Hardening** - Rate limiting, caching, security
-9. **Testing** - Unit, integration, E2E tests
-10. **CI/CD** - GitHub Actions pipelines
-11. **AWS Deployment** - ECS, RDS, S3, CloudWatch
+1. ✅ **Database** - Prisma schema covering auth, organizations, projects, and documents
+2. ✅ **Authentication** - Registration, login, JWT access/refresh tokens, email verification, password reset
+3. ✅ **Organizations + RBAC** - Multi-tenancy, organization roles (OWNER/ADMIN/MEMBER/VIEWER)
+4. ✅ **Project Management** - Projects, project-level roles (LEAD/MEMBER/VIEWER), members, dashboard, activity/audit log
+5. **Document Management** - Upload, S3, metadata (`Document` model exists; no upload endpoint yet)
+6. 🚧 **Background Processing** - BullMQ queue and worker service exist; the job handler is still a stub with nothing enqueuing real work
+7. **RAG / AI** - Embeddings, vector search, LLM (schema modeled - `AiConversation`/`AiMessage`/`DocumentChunk` - no LLM integration yet)
+8. **WebSockets** - Real-time updates (not started)
+9. 🚧 **Production Hardening** - Rate limiting and structured error handling are live; caching and broader hardening still pending
+10. 🚧 **Testing** - Integration tests cover auth, organizations, and dashboard (`apps/api/src/tests/`); projects and later features aren't covered yet
+11. **CI/CD** - GitHub Actions pipelines (not started)
+12. **AWS Deployment** - ECS, RDS, S3, CloudWatch (not started)
 
 ## Production Readiness
 

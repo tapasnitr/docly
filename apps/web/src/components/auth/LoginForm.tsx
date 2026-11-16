@@ -34,7 +34,6 @@ export function LoginForm() {
     try {
       await login({ email, password });
       router.push('/dashboard');
-      router.refresh();
     } catch (error) {
       // Invalid credentials and "account doesn't exist" surface the exact
       // same message from the API - shown here as-is, not remapped.

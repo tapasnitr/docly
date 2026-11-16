@@ -2,6 +2,8 @@ import type { Project as PrismaProject, ProjectRole, ProjectStatus } from '@docl
 import type { Project, ProjectSummary } from '@docly/types';
 import { projectRepository, type ListProjectsOptions } from '../repositories/project.repository.js';
 import { projectMemberRepository } from '../repositories/project-member.repository.js';
+import { taskRepository } from '../repositories/task.repository.js';
+import { documentService } from './document.service.js';
 import { organizationMemberRepository } from '../repositories/organization-member.repository.js';
 import { auditLogRepository } from '../repositories/audit-log.repository.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
@@ -25,13 +27,26 @@ export interface UpdateProjectInput {
   dueDate?: Date | null;
 }
 
-// taskCount/progress have no real data source until Task Management ships -
-// fixed placeholders until then (see the plan's "out of scope" section).
-//
+interface TaskStats {
+  total: number;
+  done: number;
+}
+
+// progress is the percentage of the project's tasks that are DONE, or null
+// while it has no tasks (there's nothing to measure yet).
+function progressOf(stats: TaskStats): number | null {
+  return stats.total === 0 ? null : Math.round((stats.done / stats.total) * 100);
+}
+
 // Builds the response explicitly (not `...project`) because the list path
 // passes rows that carry Prisma's `_count` alongside the real columns -
 // spreading it would leak that key into the JSON response.
-function toSummary(project: PrismaProject, role: ProjectRole, memberCount: number): ProjectSummary {
+function toSummary(
+  project: PrismaProject,
+  role: ProjectRole,
+  memberCount: number,
+  stats: TaskStats = { total: 0, done: 0 }
+): ProjectSummary {
   const base: Project = {
     id: project.id,
     organizationId: project.organizationId,
@@ -44,7 +59,7 @@ function toSummary(project: PrismaProject, role: ProjectRole, memberCount: numbe
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
-  return { ...base, role, memberCount, taskCount: 0, progress: null };
+  return { ...base, role, memberCount, taskCount: stats.total, progress: progressOf(stats) };
 }
 
 // Service layer: business logic for the project domain. Organization/project
@@ -112,10 +127,17 @@ export const projectService = {
         )
       : null;
 
+    const statsByProjectId = await taskRepository.countsByProject(projects.map((project) => project.id));
+
     return {
       total,
       projects: projects.map((project) =>
-        toSummary(project, roleByProjectId?.get(project.id) ?? 'LEAD', project._count.members)
+        toSummary(
+          project,
+          roleByProjectId?.get(project.id) ?? 'LEAD',
+          project._count.members,
+          statsByProjectId.get(project.id)
+        )
       ),
     };
   },
@@ -126,7 +148,8 @@ export const projectService = {
       throw new NotFoundError('Project not found');
     }
     const members = await projectMemberRepository.listByProject(projectId);
-    return toSummary(project, viewerRole, members.length);
+    const stats = (await taskRepository.countsByProject([projectId])).get(projectId);
+    return toSummary(project, viewerRole, members.length, stats);
   },
 
   async updateProject(
@@ -152,7 +175,8 @@ export const projectService = {
     });
 
     const members = await projectMemberRepository.listByProject(projectId);
-    return toSummary(updated, actorRole, members.length);
+    const stats = (await taskRepository.countsByProject([projectId])).get(projectId);
+    return toSummary(updated, actorRole, members.length, stats);
   },
 
   async deleteProject(organizationId: string, projectId: string, actorUserId: string): Promise<void> {
@@ -171,6 +195,10 @@ export const projectService = {
       resourceId: projectId,
       changes: { name: existing.name },
     });
+    // Documents cascade with the project in the DB; their stored files don't,
+    // so collect the keys first and remove the files once the delete worked.
+    const storageKeys = await documentService.storageKeysForProject(projectId);
     await projectRepository.delete(projectId);
+    await documentService.removeStoredFiles(storageKeys);
   },
 };

@@ -50,3 +50,6 @@ coverage
 .turbo
 .env.*.local
 .cache
+
+# Uploaded documents (local storage provider)
+/storage/

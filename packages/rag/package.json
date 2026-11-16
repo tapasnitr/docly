@@ -1,0 +1,16 @@
+{
+  "name": "@docly/rag",
+  "version": "0.1.0",
+  "description": "Retrieval-augmented generation core: embeddings, vector search, grounded prompts, streaming answers with citations",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^22.0.0",
+    "vitest": "^2.1.4"
+  }
+}

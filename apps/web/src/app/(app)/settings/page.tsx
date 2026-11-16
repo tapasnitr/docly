@@ -16,7 +16,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Account settings</h1>
 
       <EmailVerificationBanner emailVerified={user.emailVerified} />

@@ -13,7 +13,7 @@ const STORAGE_KEY = 'docly:currentOrganizationId';
 // the user's first organization (typically their personal workspace from
 // registration) until something is picked.
 export function useCurrentOrganization() {
-  const { organizations, status } = useOrganizations();
+  const { organizations, status, refresh } = useOrganizations();
   const [storedId, setStoredId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,5 +36,5 @@ export function useCurrentOrganization() {
   const isStoredIdValid = storedId ? organizations.some((org) => org.id === storedId) : false;
   const currentOrganizationId = isStoredIdValid ? storedId : (organizations[0]?.id ?? null);
 
-  return { organizations, status, currentOrganizationId, setCurrentOrganizationId };
+  return { organizations, status, refresh, currentOrganizationId, setCurrentOrganizationId };
 }

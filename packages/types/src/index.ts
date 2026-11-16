@@ -77,17 +77,30 @@ export interface OrganizationMember {
 }
 
 // Document types
+// pending = uploaded and queued for processing; processing = the worker is
+// extracting text; ready = processed; failed = see processingError (Retry).
+export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'failed';
+
 export interface Document {
   id: string;
   organizationId: string;
-  uploadedBy: string;
+  projectId: string | null;
   title: string;
   filename: string;
+  mimeType: string;
   size: number;
-  status: 'pending' | 'processing' | 'ready' | 'failed';
-  s3Key: string;
+  status: DocumentStatus;
+  processingError: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// A document as returned by the API, with its uploader and project.
+export interface DocumentSummary extends Document {
+  // Number of text chunks extracted by processing (0 until it is ready).
+  chunkCount: number;
+  uploadedBy: Pick<User, 'id' | 'name' | 'email'>;
+  project: { id: string; name: string } | null;
 }
 
 // Document chunk for RAG
@@ -146,8 +159,8 @@ export interface Project {
 
 // A project as returned to the current user - includes their own effective
 // role (see apps/api/src/lib/project-rbac.ts) and summary counts for the
-// list/detail views. taskCount/progress have no real data source until
-// Task Management ships - they're fixed placeholders until then.
+// list/detail views. taskCount is the project's total tasks; progress is the
+// percentage of them that are DONE (null while there are no tasks yet).
 export interface ProjectSummary extends Project {
   role: ProjectRole;
   memberCount: number;
@@ -162,6 +175,30 @@ export interface ProjectMember {
   role: ProjectRole;
   createdAt: Date;
   user: Pick<User, 'id' | 'email' | 'name' | 'avatarUrl'>;
+}
+
+// Task types
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface Task {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assigneeId: string | null;
+  createdById: string;
+  dueDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// A task as returned by the API: the row plus its assignee's public profile.
+export interface TaskSummary extends Task {
+  assignee: Pick<User, 'id' | 'email' | 'name' | 'avatarUrl'> | null;
 }
 
 export interface Pagination {
@@ -201,10 +238,31 @@ export interface RecentDocument {
   uploadedBy: Pick<User, 'id' | 'name' | 'email'>;
 }
 
+export interface ProjectCounts {
+  total: number;
+  planning: number;
+  active: number;
+  onHold: number;
+  completed: number;
+  archived: number;
+}
+
+export interface RecentProject {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  dueDate: Date | null;
+  updatedAt: Date;
+  memberCount: number;
+}
+
 export interface DashboardSummary {
   organization: OrganizationSummary;
   documentCounts: DocumentCounts;
   recentDocuments: RecentDocument[];
+  projectCounts: ProjectCounts;
+  recentProjects: RecentProject[];
+  memberCount: number;
 }
 
 // Activity types (GET /organizations/:organizationId/activity)

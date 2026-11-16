@@ -1,0 +1,7 @@
+{
+  "watch": ["../../.env", "next.config.ts"],
+  "ext": "*",
+  "ignore": ["src/**", ".next/**", "node_modules/**"],
+  "exec": "next dev --turbopack -p 3000",
+  "delay": 500
+}

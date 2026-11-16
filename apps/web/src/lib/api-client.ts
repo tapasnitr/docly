@@ -1,6 +1,10 @@
 import type { ApiResponse } from '@docly/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost/api';
+// Must match the hostname the web app itself is served from - cookies are
+// scoped by hostname, not port, so this has to stay "localhost" (not
+// 127.0.0.1) for the hybrid dev flow's auth cookies to work. See
+// .env.example's NEXT_PUBLIC_API_URL comment.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export class ApiRequestError extends Error {
   constructor(

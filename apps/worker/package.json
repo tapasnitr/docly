@@ -5,26 +5,34 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "node --import tsx ./src/index.ts",
+    "dev": "tsx watch --include ../../.env ./src/index.ts",
     "build": "tsc",
     "start": "node --import tsx ./src/index.ts",
     "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "bullmq": "^5.7.0",
-    "@prisma/client": "^5.13.0",
     "@docly/config": "*",
-    "@docly/types": "*",
-    "@docly/logger": "*",
     "@docly/database": "*",
-    "tsx": "^4.7.0"
+    "@docly/jobs": "*",
+    "@docly/rag": "*",
+    "@docly/logger": "*",
+    "@docly/storage": "*",
+    "@docly/types": "*",
+    "@prisma/client": "^5.13.0",
+    "bullmq": "^5.7.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^4.10.38",
+    "tsx": "^4.7.0",
+    "unpdf": "^1.9.1"
   },
   "devDependencies": {
-    "typescript": "^5.3.0",
     "@types/node": "^22.0.0",
-    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
-    "@typescript-eslint/eslint-plugin": "^7.8.0"
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.1.4"
   }
 }

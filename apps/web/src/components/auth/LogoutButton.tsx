@@ -16,7 +16,6 @@ export function LogoutButton() {
       await logout();
     } finally {
       router.push('/login');
-      router.refresh();
     }
   }
 
